@@ -1,0 +1,504 @@
+Program.Sub.ScreenSU.Start
+Gui.frmMsgs..create
+Gui.frmMsgs..caption("GUI Messaging")
+Gui.frmMsgs..size(9600,6405)
+Gui.frmMsgs..minx(0)
+Gui.frmMsgs..miny(0)
+Gui.frmMsgs..position(0,0)
+Gui.frmMsgs..event(MouseUp,gsfgguimsgs_commandclick)
+Gui.frmMsgs..event(UnLoad,frmmsgs_unload)
+Gui.frmMsgs..forecolor(0)
+Gui.frmMsgs..BackColor(15724527)
+Gui.frmMsgs..maxbutton(False)
+Gui.frmMsgs..mousepointer(0)
+Gui.frmMsgs..Sizeable(False)
+Gui.frmMsgs.ddlEmpl.create(dropdownlist)
+Gui.frmMsgs.ddlEmpl.size(2130,330)
+Gui.frmMsgs.ddlEmpl.position(195,420)
+Gui.frmMsgs.ddlEmpl.event(SelectedIndexChanged,ddlempl_SelectedIndexChanged)
+Gui.frmMsgs.ddlEmpl.defaultvalue("")
+Gui.frmMsgs.ddlEmpl.tabstop(True)
+Gui.frmMsgs.ddlEmpl.tabindex(2)
+Gui.frmMsgs.lbl1.create(label,"Employee",True,1935,255,1,240,195,True,0,Arial,8,15790320,0)
+Gui.frmMsgs.lbl1.defaultvalue("")
+Gui.frmMsgs.chkShowRead.create(checkbox)
+Gui.frmMsgs.chkShowRead.caption("Show Read")
+Gui.frmMsgs.chkShowRead.size(1680,255)
+Gui.frmMsgs.chkShowRead.position(345,1620)
+Gui.frmMsgs.chkShowRead.event(Click,chkshowread_click)
+Gui.frmMsgs.chkShowRead.defaultvalue("0")
+Gui.frmMsgs.chkShowRead.tabstop(True)
+Gui.frmMsgs.chkShowRead.tabindex(8)
+Gui.frmMsgs.mltxt1.create(textboxm)
+Gui.frmMsgs.mltxt1.size(5970,1110)
+Gui.frmMsgs.mltxt1.position(2415,420)
+Gui.frmMsgs.mltxt1.borderstyle(1)
+Gui.frmMsgs.mltxt1.numericonly(0)
+Gui.frmMsgs.mltxt1.maxLength(256)
+Gui.frmMsgs.mltxt1.BackColor(16777215)
+Gui.frmMsgs.mltxt1.defaultvalue("")
+Gui.frmMsgs.mltxt1.tabstop(True)
+Gui.frmMsgs.mltxt1.tabindex(4)
+Gui.frmMsgs.btnAdd.create(button)
+Gui.frmMsgs.btnAdd.caption("Add")
+Gui.frmMsgs.btnAdd.size(855,375)
+Gui.frmMsgs.btnAdd.position(8475,420)
+Gui.frmMsgs.btnAdd.event(Click,btnadd_click)
+Gui.frmMsgs.btnAdd.defaultvalue("")
+Gui.frmMsgs.btnAdd.tabstop(True)
+Gui.frmMsgs.btnAdd.tabindex(5)
+Gui.frmMsgs.btnClear.create(button)
+Gui.frmMsgs.btnClear.caption("Clear")
+Gui.frmMsgs.btnClear.size(855,375)
+Gui.frmMsgs.btnClear.position(8475,870)
+Gui.frmMsgs.btnClear.event(Click,btnclear_click)
+Gui.frmMsgs.btnClear.defaultvalue("")
+Gui.frmMsgs.btnClear.tabstop(True)
+Gui.frmMsgs.btnClear.tabindex(6)
+Gui.frmMsgs.gsgcGUIMsgs.Create(GsGridControl)
+Gui.frmMsgs.gsgcGUIMsgs.Size(9165,3705)
+Gui.frmMsgs.gsgcGUIMsgs.Position(165,1965)
+Gui.frmMsgs.gsgcGUIMsgs.Event(RowCellClick,gsfgguimsgs_commandclick)
+Gui.frmMsgs.lbl2.Create(Label,"New Message",True,1935,255,1,2400,195,True,0,"Arial",8,15790320,0)
+Gui.frmMsgs.lbl2.DefaultValue("")
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Send Messages to GUI for Employee(s)
+'By Josh Withrow
+'Authored 10/21/2014
+'RGRC 021816
+'Idea came from a conversation with Detroit Tube.
+
+'INFO
+'49755 employee scan v.passed.EmployeeID
+'50721 EMPLOYEE ACTIVATED BY CLICK V.Passed.Employee
+
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+
+F.ODBC.Connection!Conn.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+'Check that MSGs and OPTIONS tables exist.  If not, this will create the tables and in the case of OPTS,
+'will initialize any required OPTS.
+F.Intrinsic.Control.CallSub(Checkdb)
+'Purge (read DELETE) messages older than PURGEDAYS (OPTs table)
+F.Intrinsic.Control.CallSub(Cleandb)
+
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+	F.Intrinsic.Control.Case(49755)
+		'Employee scanned in NEW GUI [.NET] ...  get messages/notifications. FEQ Added an additional args variable to avoid having to do the hook check in the subroutine again
+		F.Intrinsic.Control.CallSub(Getmsgs, "EMPLOYEEID", V.Passed.Employee)
+	F.Intrinsic.Control.Case(50721)
+		'Employee activated (click) in NEW GUI [.NET] ...  get messages/notifications
+		F.Intrinsic.Control.CallSub(Getmsgs, "EMPLOYEEID", V.Passed.EmployeeID)
+	F.Intrinsic.Control.Case(15755)
+		'Employee scanned in OLD GUI ...  get messages/notifications. FEQ Added an additional args variable to avoid having to do the hook check in the subroutine again
+		F.Intrinsic.Control.CallSub(Getmsgs, "EMPLOYEEID", V.Passed.009993)
+	F.Intrinsic.Control.Case(15921)
+		'Employee activated (click) in OLD GUI...  get messages/notifications
+		F.Intrinsic.Control.CallSub(Getmsgs, "EMPLOYEEID", V.Passed.009993)
+	F.Intrinsic.Control.CaseElse
+		'My best guess is that the menu item was clicked to add/delete/mark read/unread messages
+		F.Intrinsic.Control.CallSub(Buildstyles)
+		F.Intrinsic.Control.CallSub(Ddlempl_load)
+		Gui.frmMsgs..Show
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.CheckDB.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.sSQL.Declare(String)
+V.Local.bTableExists.Declare(Boolean)
+V.Local.sPurgedaysExists.Declare(String)
+V.Local.sPurgedays.Declare(String)
+V.Local.bIsNumeric.Declare(Boolean)
+
+F.Intrinsic.UI.InvokeWaitDialog("Checking database...","Setting Up")
+
+F.ODBC.Connection!Conn.TableExists("GAB_GUI_USERMSGS",V.Local.bTableExists)
+F.Intrinsic.Control.If(V.Local.bTableExists,=,False)
+	V.Local.sSQL.Set("CREATE TABLE GAB_GUI_USERMSGS(")
+	V.Local.sSQL.Append("MESSAGEID IDENTITY ,")
+	V.Local.sSQL.Append("MESSAGE VARCHAR(256) NOT NULL ,")
+	V.Local.sSQL.Append("CREATEDBY CHAR(8) NOT NULL ,")
+	V.Local.sSQL.Append("CREATEDON DATETIME NOT NULL DEFAULT NOW() ,")
+	V.Local.sSQL.Append("EMPL CHAR(5) NOT NULL ,")
+	V.Local.sSQL.Append("READ BIT DEFAULT '0' NOT NULL ,")
+	V.Local.sSQL.Append("PRIMARY KEY (MESSAGEID));")
+	F.ODBC.Connection!Conn.Execute(V.Local.sSQL)
+F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!Conn.TableExists("GAB_GUI_USERMSGS_OPT",V.Local.bTableExists)
+F.Intrinsic.Control.If(V.Local.bTableExists,=,False)
+	V.Local.sSQL.Set("CREATE TABLE GAB_GUI_USERMSGS_OPT(")
+	V.Local.sSQL.Append("OPTIONNAME VARCHAR(64) NOT NULL ,")
+	V.Local.sSQL.Append("OPTIONVALUE VARCHAR(64) NOT NULL );")
+	V.Local.sSQL.Append("PRIMARY KEY (OPTIONNAME));")
+	F.ODBC.Connection!Conn.Execute(V.Local.sSQL)
+F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!Conn.ExecuteAndReturn("SELECT COUNT(*) FROM GAB_GUI_USERMSGS_OPT WHERE OPTIONNAME='PURGEDAYS'",V.Local.sPurgedaysExists)
+F.Intrinsic.Control.If(V.Local.sPurgedaysExists,<,1)
+	F.Intrinsic.Control.Label("PromptPurgeDays")
+	F.Intrinsic.UI.Inputbox("How many days should these messages be retained for?  They will automatically be purged when they are older than the number of days entered.","Set Option","90",V.Local.sPurgedays)
+	F.Intrinsic.Math.IsNumeric(V.Local.sPurgedays,V.Local.bIsNumeric)
+	F.Intrinsic.Control.If(V.Local.bIsNumeric,=,False)
+		F.Intrinsic.UI.Msgbox("Value not numeric!  Only supply whole numbers.","Not numberic")
+		F.Intrinsic.Control.GoTo("PromptPurgeDays")
+	F.Intrinsic.Control.EndIf
+	V.Local.sSQL.Set("INSERT INTO GAB_GUI_USERMSGS_OPT (OPTIONNAME, OPTIONVALUE) VALUES ('PURGEDAYS','{0}')")
+	F.Intrinsic.String.Build(V.Local.sSQL,V.Local.sPurgedays,V.Local.sSQL)
+	F.ODBC.Connection!Conn.Execute(V.Local.sSQL)
+F.Intrinsic.Control.ElseIf(V.Local.sPurgedaysExists,>,1)
+	F.ODBC.Connection!Conn.Execute("DELETE FROM GAB_GUI_USERMSGS_OPT;")
+	F.Intrinsic.Control.GoTo("PromptPurgeDays")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.UI.CloseWaitDialog
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.CheckDB.End
+
+Program.Sub.gsfgguimsgs_commandclick.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.iMessageID.Declare(Long)
+V.Local.sMarkRead.Declare(String, "")
+V.Local.sMarkUnread.Declare(String, "")
+V.Local.sDelete.Declare(String, "")
+
+Gui.frmMsgs.gsgcGUIMsgs.GetCellValueByColumnName("gridDisplay", "MESSAGEID", V.Args.RowIndex, V.Local.iMessageID)
+
+F.Intrinsic.Control.SelectCase(V.Args.Column.UCase)
+	F.Intrinsic.Control.Case("READ_STATUS")
+		'Mark read/unread clicked
+		F.Intrinsic.Control.If(V.Screen.frmMsgs!chkShowRead.Value, =, 1)
+			F.Intrinsic.String.Build("UPDATE GAB_GUI_USERMSGS SET READ = 0 WHERE MESSAGEID = {0}", V.Local.iMessageID, V.Local.sMarkUnread)
+			F.ODBC.Connection!Conn.Execute(V.Local.sMarkUnread)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("UPDATE GAB_GUI_USERMSGS SET READ = 1 WHERE MESSAGEID = {0}", V.Local.iMessageID, V.Local.sMarkRead)
+			F.ODBC.Connection!Conn.Execute(V.Local.sMarkRead)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Case("DELETE_MSG")
+		'Delete clicked
+		F.Intrinsic.String.Build("DELETE FROM GAB_GUI_USERMSGS WHERE MESSAGEID = {0}", V.Local.iMessageID, V.Local.sDelete)
+		F.ODBC.Connection!Conn.Execute(V.Local.sDelete)
+	F.Intrinsic.Control.CaseElse
+		'Not sure what was clicked...  lets do nothing!
+		F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.CallSub(Gsfgguimsgs_load)
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.gsfgguimsgs_commandclick.End
+
+Program.Sub.btnadd_click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.sEMPL.Declare(String)
+V.Local.iItems.Declare(Long)
+V.Local.iCount.Declare(Long,0)
+V.Local.sSQL.Declare(String)
+V.Local.sText.Declare(String)
+
+F.Intrinsic.Hash.LookupByKey("Employees",V.Screen.frmMsgs!ddlEmpl.ItemData,True,V.Local.sEMPL)
+F.Intrinsic.Hash.ItemCount("Employees",V.Local.iItems)
+
+F.Intrinsic.Control.If(V.Screen.frmMsgs!ddlEmpl.ListIndex,=,0)
+	F.Intrinsic.Control.For(V.Local.iCount,1,V.Local.iItems,1)
+		V.Local.sSQL.Set("INSERT INTO GAB_GUI_USERMSGS (MESSAGE, CREATEDBY, EMPL) VALUES ('{0}','{1}','{2}')")
+		F.Intrinsic.Hash.LookupByKey("Employees",V.Local.iCount,True,V.Local.sEMPL)
+		F.Intrinsic.String.Replace(V.Screen.frmMsgs!mltxt1.Text,"'","''",V.Local.sText)
+		F.Intrinsic.String.Build(V.Local.sSQL,V.Local.sText,V.Caller.User,V.Local.sEMPL,V.Local.sSQL)
+		F.ODBC.Connection!Conn.Execute(V.Local.sSQL)
+	F.Intrinsic.Control.Next(V.Local.iCount)
+	F.Intrinsic.UI.Msgbox("Message sent to all employees.","Message Sent")
+F.Intrinsic.Control.Else
+	V.Local.sSQL.Set("INSERT INTO GAB_GUI_USERMSGS (MESSAGE, CREATEDBY, EMPL) VALUES ('{0}','{1}','{2}')")
+	F.Intrinsic.String.Replace(V.Screen.frmMsgs!mltxt1.Text,"'","''",V.Local.sText)
+	F.Intrinsic.String.Build(V.Local.sSQL,V.Local.sText,V.Caller.User,V.Local.sEMPL,V.Local.sSQL)
+	F.ODBC.Connection!Conn.Execute(V.Local.sSQL)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(Btnclear_click)
+F.Intrinsic.Control.CallSub(Gsfgguimsgs_load)
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.btnadd_click.End
+
+Program.Sub.btnclear_click.Start
+Gui.frmMsgs.mltxt1.Text("")
+
+Program.Sub.btnclear_click.End
+
+Program.Sub.ddlempl_SelectedIndexChanged.Start
+F.Intrinsic.Control.CallSub(Btnclear_click)
+F.Intrinsic.Control.CallSub(Gsfgguimsgs_load)
+
+Program.Sub.ddlempl_SelectedIndexChanged.End
+
+Program.Sub.frmmsgs_unload.Start
+F.Intrinsic.Control.If(V.ODBC.Conn.State,=,1)
+	F.ODBC.Connection!Conn.Close
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.End
+
+Program.Sub.frmmsgs_unload.End
+
+Program.Sub.GetMsgs.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.sSQL.Declare(String)
+V.Local.sMsg.Declare(String)
+V.Local.sTitle.Declare(String)
+
+'why make good code when long messy code do work
+F.Intrinsic.String.Build("SELECT * FROM GAB_GUI_USERMSGS WHERE EMPL='{0}' AND READ=0 ORDER BY CREATEDON", V.Args.EMPLOYEEID, V.Local.sSQL)
+
+F.ODBC.Connection!Conn.OpenLocalRecordsetRW("RS",V.Local.sSQL)
+	F.Intrinsic.Control.DoUntil(V.ODBC.Conn!RS.EOF,=,True)
+		V.Local.sMsg.Set(V.ODBC.Conn!RS.FieldValTrim!MESSAGE)
+		F.Intrinsic.String.Build("MESSAGE FROM {0} ON {1}", V.ODBC.Conn!RS.FieldValTrim!CREATEDBY, V.ODBC.Conn!RS.FieldValTrim!CREATEDON, V.Local.sTitle)
+		F.Intrinsic.UI.Msgbox(V.Local.sMsg,V.Local.sTitle)
+		F.ODBC.Conn!RS.Set!READ(1)
+		F.ODBC.Conn!RS.Update
+		F.ODBC.Conn!RS.MoveNext
+	F.Intrinsic.Control.Loop
+F.ODBC.Conn!RS.Close
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.GetMsgs.End
+
+Program.Sub.CleanDB.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.sPurgeDays.Declare(String)
+V.Local.sSQL.Declare(String)
+
+V.Local.sSQL.Set("SELECT OPTIONVALUE FROM GAB_GUI_USERMSGS_OPT WHERE OPTIONNAME='PURGEDAYS'")
+F.ODBC.Connection!Conn.ExecuteAndReturn(V.Local.sSQL,V.Local.sPurgeDays)
+
+V.Local.sSQL.Set("DELETE FROM GAB_GUI_USERMSGS WHERE DATEDIFF(day,CREATEDON,CURRENT_DATE())>{0}")
+F.Intrinsic.String.Build(V.Local.sSQL,V.Local.sPurgeDays,V.Local.sSQL)
+
+F.ODBC.Connection!Conn.Execute(V.Local.sSQL)
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.CleanDB.End
+
+Program.Sub.ddlEmpl_Load.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.i.Declare(Long,1)
+
+F.Intrinsic.UI.InvokeWaitDialog("Loading employees...","Setting Up")
+
+Gui.frmMsgs.ddlEmpl.AddItem("All Employees",0)
+
+F.ODBC.Connection!Conn.OpenLocalRecordsetRO("RS","SELECT DISTINCT EMPLOYEE, NAME FROM V_EMPLOYEE_MSTR ORDER BY NAME")
+	F.Intrinsic.Control.DoUntil(V.ODBC.Conn!RS.EOF,=,True)
+		F.Intrinsic.Hash.AddItem("Employees",V.Local.i,V.ODBC.Conn!RS.FieldValTrim!EMPLOYEE)
+		Gui.frmMsgs.ddlEmpl.AddItem(V.ODBC.Conn!RS.FieldValTrim!NAME,V.Local.i)
+		F.Intrinsic.Math.Add(V.Local.i,1,V.Local.i)
+		F.ODBC.Conn!RS.MoveNext
+	F.Intrinsic.Control.Loop
+F.ODBC.Conn!RS.Close
+
+F.Intrinsic.UI.CloseWaitDialog
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.ddlEmpl_Load.End
+
+Program.Sub.BuildStyles.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.sTitles.Declare(String)
+V.Local.i.Declare(Long)
+
+'Going to be using a datatable and a GS gridview instead of a flexgrid. This should build an empty table with the expected structure of the datatypes
+F.Data.DataTable.CreateFromSQL("dtDisplay", "Conn", "SELECT MESSAGEID, MESSAGE, READ FROM GAB_GUI_USERMSGS WHERE EMPL='DNE'", True)
+F.Data.DataTable.AddColumn("dtDisplay", "READ_STATUS", "String")
+F.Data.DataTable.AddColumn("dtDisplay", "DELETE_MSG", "String")
+
+Gui.frmMsgs.gsgcGUIMsgs.AddGridviewFromDatatable("gridDisplay", "dtDisplay")
+
+Gui.frmMsgs.gsgcGUIMsgs.SetGridviewProperty("gridDisplay", "AllowColumnMoving", False)
+Gui.frmMsgs.gsgcGUIMsgs.SetGridviewProperty("gridDisplay", "OptionsViewRowAutoHeight", True)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ", "Visible", False)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGEID", "Caption", "ID")
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGE", "Caption", "Mesage")
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS", "Caption", " ")
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG","Caption"," ")
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGEID","VisibleIndex",0)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGE","VisibleIndex", 1)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS","VisibleIndex", 2)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG","VisibleIndex", 3)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGEID", "AllowEdit", False)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGE", "AllowEdit", False)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS", "AllowEdit", False)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG", "AllowEdit", False)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGEID", "ReadOnly", True)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGE", "ReadOnly", True)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS", "ReadOnly", True)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG", "ReadOnly", True)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGEID", "MinWidth", 5)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGE", "MinWidth", 50)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS", "MinWidth", 10)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG", "MinWidth", 10)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGEID", "Width", 9)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGE", "Width", 150)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS", "Width", 15)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG", "Width", 13)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGEID", "HeaderFontBold", True)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGE", "HeaderFontBold", True)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS", "HeaderFontBold", True)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG", "HeaderFontBold", True)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "MESSAGE", "CellWordWrap", "Wrap")
+
+Gui.frmMsgs.gsgcGUIMsgs.ColumnEdit("gridDisplay", "READ_STATUS", "EditorButton", " ")
+Gui.frmMsgs.gsgcGUIMsgs.ColumnEdit("gridDisplay", "DELETE_MSG", "EditorButton", "Delete")
+
+Gui.frmMsgs.gsgcGUIMsgs.MainView("gridDisplay")
+
+F.Data.Dictionary.Create("dicRead")
+F.Data.Dictionary.AddItem("dicRead", "True", "Read")
+F.Data.Dictionary.AddItem("dicRead", "False", "Unread")
+F.Data.Dictionary.SetDefaultReturn("dicRead", "Uni")
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.BuildStyles.End
+
+Program.Sub.gsfgguimsgs_load.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.sEMPL.Declare(String, "")
+V.Local.sSQL.Declare(String,)
+V.Local.iRows.Declare(Long, 0)
+
+F.Intrinsic.Hash.LookupByKey("Employees", V.Screen.frmMsgs!ddlEmpl.ItemData, True, V.Local.sEMPL)
+F.Intrinsic.String.Build("SELECT MESSAGEID, MESSAGE, READ FROM GAB_GUI_USERMSGS WHERE EMPL = '{0}' AND READ = {1} ORDER BY CREATEDON", V.Local.sEMPL, V.Screen.frmMsgs!chkShowRead.Value, V.Local.sSQL)
+
+F.Data.DataTable.CreateFromSQL("dtTemp", "Conn", V.Local.sSQL, True)
+
+F.Data.DataTable.AddColumn("dtTemp", "READ_STATUS", "String")
+F.Data.DataTable.AddColumn("dtTemp", "DELETE_MSG", "String", "Delete")
+
+F.Data.DataTable.FillFromDictionary("dtTemp", "dicRead", "READ", "READ_STATUS")
+
+Gui.frmMsgs.gsgcGUIMsgs.SuspendLayout
+Gui.frmMsgs.gsgcGUIMsgs.Visible(False)
+
+F.Data.DataTable.DeleteRow("dtDisplay")
+F.Data.DataTable.Merge("dtTemp", "dtDisplay", True, 2)
+F.Data.DataTable.Close("dtTemp")
+
+'For some reason if the column is set to be a button with the property editor button, the value for the column in the grid will not display the information in the actual table, so we have to manually set according to the filter we are looking at
+F.Intrinsic.Control.If(V.Screen.frmMsgs!chkShowRead.Value, =, 1)
+	Gui.frmMsgs.gsgcGUIMsgs.ColumnEdit("gridDisplay", "READ_STATUS", "EditorButton", "Read")
+F.Intrinsic.Control.Else
+	Gui.frmMsgs.gsgcGUIMsgs.ColumnEdit("gridDisplay", "READ_STATUS", "EditorButton", "Unread")
+F.Intrinsic.Control.EndIf
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS", "AllowEdit", False)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG", "AllowEdit", False)
+
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "READ_STATUS", "ReadOnly", True)
+Gui.frmMsgs.gsgcGUIMsgs.SetColumnProperty("gridDisplay", "DELETE_MSG", "ReadOnly", True)
+
+Gui.frmMsgs.gsgcGUIMsgs.Visible(True)
+Gui.frmMsgs.gsgcGUIMsgs.ResumeLayout
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("ARC Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+	F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+	F.Intrinsic.Control.CallSub(frmmsgs_unload)
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.gsfgguimsgs_load.End
+
+Program.Sub.chkshowread_click.Start
+F.Intrinsic.Control.CallSub(Gsfgguimsgs_load)
+
+Program.Sub.chkshowread_click.End
+
+Program.Sub.Comments.Start
+${$0$}$GAB_GUI_USERMSGS$}$SUPERVSR$}$10/14/2014
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$Update Contract Part Price From Quote Lines or Order Lines
+${$5$}$2.0.0.0$}$2
+${$6$}$agupta$}$20200625124331841$}$2j9YvRk5PePUWpWDTWwG2trjr0T3I1UyzVvvwjXuO7M7Ze6+J9vcqPAA1FpwDngIn6Hx2hwg518=
+Program.Sub.Comments.End
